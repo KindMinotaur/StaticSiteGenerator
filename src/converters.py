@@ -2,6 +2,7 @@ from typing import Any
 
 from textnode import TextNode, TextType
 from htmlnode import LeafNode
+import re
 
 
 def text_node_to_html_node(text_node: Any) -> LeafNode:
@@ -36,3 +37,24 @@ def text_node_to_html_node(text_node: Any) -> LeafNode:
         return LeafNode("img", "", props={"src": text_node.url, "alt": text_node.text})
 
     raise ValueError(f"Unsupported TextType: {ttype}")
+
+
+def extract_markdown_images(text: str):
+    """Return list of (alt, url) tuples for markdown images in text.
+
+    Matches patterns like: ![alt text](url)
+    """
+    # Matches images like: ![alt](url)
+    # Use provided stricter pattern to avoid nested brackets/parentheses inside groups
+    pattern = re.compile(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)")
+    return [(m.group(1), m.group(2)) for m in pattern.finditer(text)]
+
+
+def extract_markdown_links(text: str):
+    """Return list of (anchor, url) tuples for markdown links in text.
+
+    Matches patterns like: [anchor text](url)
+    """
+    # Matches links like: [anchor](url) but not images (negative lookbehind for '!')
+    pattern = re.compile(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)")
+    return [(m.group(1), m.group(2)) for m in pattern.finditer(text)]
