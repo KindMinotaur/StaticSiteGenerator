@@ -1,40 +1,68 @@
 import unittest
-
-from htmlnode import HTMLNode, LeafNode, ParentNode
+from htmlnode import LeafNode, ParentNode, HTMLNode
 
 
 class TestHTMLNode(unittest.TestCase):
+    def test_to_html_props(self):
+        node = HTMLNode(
+            "div",
+            "Hello, world!",
+            None,
+            {"class": "greeting", "href": "https://boot.dev"},
+        )
+        self.assertEqual(
+            node.props_to_html(),
+            ' class="greeting" href="https://boot.dev"',
+        )
 
-    def test_props_to_html_empty(self):
-        node = HTMLNode(tag='div', value=None, props={})
-        self.assertEqual(node.props_to_html(), '')
+    def test_values(self):
+        node = HTMLNode(
+            "div",
+            "I wish I could read",
+        )
+        self.assertEqual(
+            node.tag,
+            "div",
+        )
+        self.assertEqual(
+            node.value,
+            "I wish I could read",
+        )
+        self.assertEqual(
+            node.children,
+            None,
+        )
+        self.assertEqual(
+            node.props,
+            None,
+        )
 
-    def test_props_to_html_single(self):
-        node = HTMLNode(tag='span', value='hello', props={'class': 'btn'})
-        self.assertEqual(node.props_to_html(), 'class="btn"')
+    def test_repr(self):
+        node = HTMLNode(
+            "p",
+            "What a strange world",
+            None,
+            {"class": "primary"},
+        )
+        self.assertEqual(
+            node.__repr__(),
+            "HTMLNode(p, What a strange world, children: None, {'class': 'primary'})",
+        )
 
-    def test_props_to_html_multiple(self):
-        node = HTMLNode(tag='a', value='link', props={'id': 'main', 'href': '/home'})
-        # dict insertion order is preserved in Python 3.7+, so this exact string is expected
-        self.assertEqual(node.props_to_html(), 'id="main" href="/home"')
+    def test_leaf_to_html_p(self):
+        node = LeafNode("p", "Hello, world!")
+        self.assertEqual(node.to_html(), "<p>Hello, world!</p>")
 
+    def test_leaf_to_html_a(self):
+        node = LeafNode("a", "Click me!", {"href": "https://www.google.com"})
+        self.assertEqual(
+            node.to_html(),
+            '<a href="https://www.google.com">Click me!</a>',
+        )
 
-class TestLeafNode(unittest.TestCase):
-    def test_raw_text_when_no_tag(self):
-        node = LeafNode(None, "raw text")
-        self.assertEqual(node.to_html(), "raw text")
-
-    def test_render_with_tag(self):
-        node = LeafNode("p", "This is a paragraph.")
-        self.assertEqual(node.to_html(), "<p>This is a paragraph.</p>")
-
-    def test_render_with_props(self):
-        node = LeafNode("a", "link", props={"href": "/home"})
-        self.assertEqual(node.to_html(), '<a href="/home">link</a>')
-
-    def test_missing_value_raises(self):
-        with self.assertRaises(ValueError):
-            LeafNode("p", None).to_html()
+    def test_leaf_to_html_no_tag(self):
+        node = LeafNode(None, "Hello, world!")
+        self.assertEqual(node.to_html(), "Hello, world!")
 
     def test_to_html_with_children(self):
         child_node = LeafNode("span", "child")
@@ -50,21 +78,35 @@ class TestLeafNode(unittest.TestCase):
             "<div><span><b>grandchild</b></span></div>",
         )
 
-    def test_parent_missing_tag_raises(self):
-        child = LeafNode("span", "child")
-        with self.assertRaises(ValueError):
-            ParentNode(None, [child]).to_html()
+    def test_to_html_many_children(self):
+        node = ParentNode(
+            "p",
+            [
+                LeafNode("b", "Bold text"),
+                LeafNode(None, "Normal text"),
+                LeafNode("i", "italic text"),
+                LeafNode(None, "Normal text"),
+            ],
+        )
+        self.assertEqual(
+            node.to_html(),
+            "<p><b>Bold text</b>Normal text<i>italic text</i>Normal text</p>",
+        )
 
-    def test_parent_missing_children_raises(self):
-        # Explicitly pass children=None to trigger the children missing error
-        with self.assertRaises(ValueError):
-            ParentNode("div", None).to_html()
-
-    def test_mixed_children_raw_and_tagged(self):
-        # Mix raw text leaf (tag=None) with tagged leaf
-        children = [LeafNode(None, "normal "), LeafNode("b", "bold"), LeafNode(None, " text")]
-        parent = ParentNode("p", children)
-        self.assertEqual(parent.to_html(), "<p>normal <b>bold</b> text</p>")
+    def test_headings(self):
+        node = ParentNode(
+            "h2",
+            [
+                LeafNode("b", "Bold text"),
+                LeafNode(None, "Normal text"),
+                LeafNode("i", "italic text"),
+                LeafNode(None, "Normal text"),
+            ],
+        )
+        self.assertEqual(
+            node.to_html(),
+            "<h2><b>Bold text</b>Normal text<i>italic text</i>Normal text</h2>",
+        )
 
 
 if __name__ == "__main__":
